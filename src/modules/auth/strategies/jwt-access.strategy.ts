@@ -2,7 +2,6 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, ExtractJwt } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
-import { Request } from 'express';
 import { JwtPayload } from '../types/jwt-payload.type';
 
 @Injectable()
@@ -17,18 +16,19 @@ export class JwtAccessStrategy extends PassportStrategy(
     }
 
     super({
-      jwtFromRequest: ExtractJwt.fromExtractors([
-        (req: Request) => req?.cookies?.['access_token'] as string,
-      ]),
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: secret,
     });
   }
 
-  validate(payload: JwtPayload): JwtPayload {
+  validate(payload: JwtPayload) {
     if (!payload?.sub) {
       throw new UnauthorizedException('Invalid access token');
     }
-    return payload;
+    return {
+      userId: payload.sub,
+      email: payload.email,
+    };
   }
 }

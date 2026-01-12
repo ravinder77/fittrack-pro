@@ -33,13 +33,13 @@ export class User {
   })
   role: UserRole;
 
-  @Column({ nullable: true })
-  height: number;
+  @Column({ type: 'real', nullable: true })
+  height: number; // in cm
 
-  @Column({ nullable: true })
-  weight: number;
+  @Column({ type: 'real', nullable: true })
+  weight: number; // in kg
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   fitnessGoal: string;
 
   @CreateDateColumn()

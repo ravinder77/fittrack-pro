@@ -36,14 +36,9 @@ export class AuthController {
     });
   }
 
-
-
   @HttpCode(HttpStatus.CREATED)
   @Post('signup')
-  async signup(
-    @Body() body: SignupDto,
-    @Res({ passthrough: true }) res: Response,
-  ) {
+  async signup(@Body() body: SignupDto, @Res({ passthrough: true }) res: Response) {
     const { accessToken, refreshToken } = await this.authService.signup(body);
     this.setRefreshCookie(res, refreshToken);
     return {
@@ -55,14 +50,8 @@ export class AuthController {
 
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  async login(
-    @Body() body: LoginDto,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const { accessToken, refreshToken } = await this.authService.login(
-      body.email,
-      body.password,
-    );
+  async login(@Body() body: LoginDto, @Res({ passthrough: true }) res: Response) {
+    const { accessToken, refreshToken } = await this.authService.login(body.email, body.password);
     this.setRefreshCookie(res, refreshToken);
     return {
       success: true,
@@ -73,10 +62,7 @@ export class AuthController {
 
   @HttpCode(HttpStatus.OK)
   @Post('refresh')
-  async refresh(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ) {
+  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const refreshToken = req.cookies['refresh_token'] as string | undefined;
 
     if (!refreshToken) {

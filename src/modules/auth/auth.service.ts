@@ -121,10 +121,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid refresh token');
     }
     // revoke all refresh token
-    await this.refreshTokenRepo.update(
-      { userId: tokenEntity.userId },
-      { revoked: true },
-    );
+    await this.refreshTokenRepo.update({ userId: tokenEntity.userId }, { revoked: true });
   }
 
   /* ------------------------------------------------------------------ */
@@ -146,10 +143,7 @@ export class AuthService {
 
     if (tokenEntity.revoked) {
       // token reuse attack -> revoke everything
-      await this.refreshTokenRepo.update(
-        { userId: tokenEntity.userId },
-        { revoked: true },
-      );
+      await this.refreshTokenRepo.update({ userId: tokenEntity.userId }, { revoked: true });
       throw new ForbiddenException('Refresh Token reuse detected');
     }
     // check if token is valid

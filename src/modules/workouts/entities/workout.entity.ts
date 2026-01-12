@@ -1,10 +1,4 @@
-import {
-  Column,
-  JoinTable,
-  ManyToMany,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
+import { Column, JoinTable, ManyToMany, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { WorkoutPlan } from './workoutPlan.entity';
 import { Exercise } from './exercise.entity';
 

@@ -21,6 +21,6 @@ export default registerAs(
     name: process.env.DB_NAME ?? 'fittrack-pro',
     synchronize: process.env.NODE_ENV === 'development',
     autoLoadEntities: true,
-    logging: process.env.DB_LOGGING === 'true',
+    logging: process.env.DB_LOGGING === 'false',
   }),
 );
