@@ -6,11 +6,13 @@ import { User } from '../users/entities/user.entity';
 import { JwtModule } from '@nestjs/jwt';
 import jwtConfig from '../../config/jwt.config';
 import { ConfigType } from '@nestjs/config';
+import { PassportModule } from '@nestjs/passport';
+import { RefreshTokenEntity } from './entities/refresh-token.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
-
+    PassportModule,
+    TypeOrmModule.forFeature([User, RefreshTokenEntity]),
     // JWT (access token)
     JwtModule.registerAsync({
       inject: [jwtConfig.KEY],

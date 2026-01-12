@@ -1,16 +1,16 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../users/entities/user.entity';
-import { Repository } from 'typeorm';
+import { Repository, LessThan } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { SignupDto } from './dto/signup.dto';
 import { hash, compare } from '../../common/utils/hash.utils';
 import { randomUUID } from 'node:crypto';
-import bcrypt from 'bcrypt';
 import { RefreshTokenEntity } from './entities/refresh-token.entity';
 import { JwtPayload } from './types/jwt-payload.type';
 
@@ -31,7 +31,7 @@ export class AuthService {
   /* ------------------------------------------------------------------ */
   private async createRefreshToken(userId: string): Promise<string> {
     const rawToken = randomUUID(); // opaque
-    const tokenHash = await bcrypt.hash(rawToken, 10);
+    const tokenHash = await hash(rawToken);
 
     const expiresAt = new Date();
     expiresAt.setTime(Date.now() + 1000 * 60 * 60 * 24 * 7);
@@ -55,19 +55,24 @@ export class AuthService {
   }
 
   private async issueTokens(user: User) {
-    const refreshToken = await this.createRefreshToken(user.id);
-    const accessToken = await this.createAccessToken(user);
+    const [accessToken, refreshToken] = await Promise.all([
+      this.createAccessToken(user),
+      this.createRefreshToken(user.id),
+    ]);
 
-    return {
-      accessToken,
-      refreshToken,
-    };
+    return { accessToken, refreshToken };
   }
 
   /* ------------------------------------------------------------------ */
   /* SIGNUP */
   /* ------------------------------------------------------------------ */
   async signup(dto: SignupDto) {
+    const emailExists = await this.userRepository.exists({
+      where: { email: dto.email },
+    });
+    if (emailExists) {
+      throw new BadRequestException('Email already exists');
+    }
     const hashedPassword = await hash(dto.password);
 
     const user = this.userRepository.create({
@@ -95,7 +100,6 @@ export class AuthService {
     if (!isValidPassword) {
       throw new UnauthorizedException('Invalid credentials');
     }
-
     return await this.issueTokens(user);
   }
 
@@ -104,15 +108,23 @@ export class AuthService {
   /* ------------------------------------------------------------------ */
 
   async logout(refreshToken: string) {
+    if (!refreshToken) return;
     const [id, rawToken] = refreshToken.split('.');
+    if (!id || !rawToken) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
     const tokenEntity = await this.refreshTokenRepo.findOneBy({ id });
     if (!tokenEntity) return;
 
     const valid = await compare(rawToken, tokenEntity.tokenHash);
-    if (valid) {
-      tokenEntity.revoked = true;
-      await this.refreshTokenRepo.save(tokenEntity);
+    if (!valid) {
+      throw new UnauthorizedException('Invalid refresh token');
     }
+    // revoke all refresh token
+    await this.refreshTokenRepo.update(
+      { userId: tokenEntity.userId },
+      { revoked: true },
+    );
   }
 
   /* ------------------------------------------------------------------ */
@@ -120,31 +132,49 @@ export class AuthService {
   /* ------------------------------------------------------------------ */
 
   async refresh(refreshToken: string) {
+    if (!refreshToken) {
+      throw new UnauthorizedException('Missing refresh token');
+    }
     const [id, rawToken] = refreshToken.split('.');
+    if (!id || !rawToken) {
+      throw new UnauthorizedException('Invalid refresh token format');
+    }
     const tokenEntity = await this.refreshTokenRepo.findOneBy({ id });
     if (!tokenEntity) {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
     if (tokenEntity.revoked) {
+      // token reuse attack -> revoke everything
       await this.refreshTokenRepo.update(
         { userId: tokenEntity.userId },
         { revoked: true },
       );
-      throw new ForbiddenException('Token reuse detected');
+      throw new ForbiddenException('Refresh Token reuse detected');
     }
+    // check if token is valid
     const valid = await compare(rawToken, tokenEntity.tokenHash);
+
     if (!valid || tokenEntity.expiresAt < new Date()) {
       throw new UnauthorizedException('Token expired');
     }
-
+    // Rotate token
     tokenEntity.revoked = true;
     await this.refreshTokenRepo.save(tokenEntity);
 
     const user = await this.userRepository.findOneByOrFail({
       id: tokenEntity.userId,
     });
-
     return await this.issueTokens(user);
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* MAINTENANCE (optional cron job) */
+  /* ------------------------------------------------------------------ */
+
+  async cleanupExpiredRefreshTokens() {
+    await this.refreshTokenRepo.delete({
+      expiresAt: LessThan(new Date()),
+    });
   }
 }
