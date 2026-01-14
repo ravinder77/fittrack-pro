@@ -22,4 +22,11 @@ async function bootstrap() {
   await app.listen(process.env.PORT ?? 3000);
   Logger.log(`Fittrack app running on port ${process.env.PORT}`);
 }
-bootstrap();
+
+bootstrap()
+  .then((r) => {
+    console.log(r);
+  })
+  .catch((err) => {
+    console.error(err);
+  });

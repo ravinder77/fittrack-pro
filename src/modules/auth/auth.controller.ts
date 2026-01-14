@@ -13,7 +13,6 @@ import type { Request, Response } from 'express';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 
-const REFRESH_COOKIE = 'refresh_token';
 const isProd = process.env.NODE_ENV === 'production';
 
 @Controller('auth')

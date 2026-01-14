@@ -27,9 +27,7 @@ export class UsersService {
 
   private mapProfile(user: User) {
     const bmi =
-      user.height && user.weight
-        ? (user.weight / (user.height / 100) ** 2).toFixed(2)
-        : null;
+      user.height && user.weight ? (user.weight / (user.height / 100) ** 2).toFixed(2) : null;
 
     return {
       id: user.id,

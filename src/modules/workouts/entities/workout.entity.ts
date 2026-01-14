@@ -1,18 +1,38 @@
-import { Column, JoinTable, ManyToMany, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { WorkoutPlan } from './workoutPlan.entity';
-import { Exercise } from './exercise.entity';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { WorkoutPlan } from '../../workout-plans/entities/workoutPlan.entity';
+import { WorkoutExercise } from './workoutExercise.entity';
 
+@Entity('workouts')
 export class Workout {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column()
-  title: string;
+  name: string;
 
-  @ManyToOne(() => WorkoutPlan)
+  @ManyToOne(() => WorkoutPlan, (plan) => plan.workouts, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'workoutPlanId' })
   plan: WorkoutPlan;
 
-  @ManyToMany(() => Exercise)
-  @JoinTable()
-  exercises: Exercise[];
+  @OneToMany(() => WorkoutExercise, (we) => we.workout, {
+    cascade: true,
+  })
+  workoutExercises: WorkoutExercise[];
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

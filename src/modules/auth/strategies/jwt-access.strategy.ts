@@ -5,10 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtPayload } from '../types/jwt-payload.type';
 
 @Injectable()
-export class JwtAccessStrategy extends PassportStrategy(
-  Strategy,
-  'jwt-access',
-) {
+export class JwtAccessStrategy extends PassportStrategy(Strategy, 'jwt-access') {
   constructor(config: ConfigService) {
     const secret = config.get<string>('JWT_ACCESS_SECRET');
     if (!secret) {
